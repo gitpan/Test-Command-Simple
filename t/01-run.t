@@ -6,7 +6,7 @@ use warnings;
 use Test::More;
 
 BEGIN {
-    use_ok('Test::Command');
+    use_ok('Test::Command::Simple');
 }
 
 my $iswin;
