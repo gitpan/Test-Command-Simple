@@ -9,13 +9,7 @@ BEGIN {
     use_ok('Test::Command::Simple');
 }
 
-my $iswin;
-if ($^O =~ /MSWin/i)
-{
-    $iswin++;
-}
-
-run($iswin ? (qw:cmd /c:) : (qw:sh -c:), 'echo "this is here in the output"');
+run($^X, qw(-le), 'print q[this is here in the output]');
 like(stdout, qr/here in the/, "Output looks ok");
 is(length stderr, 0, "No stderr");
 is(rc, 0, "Returns ok");

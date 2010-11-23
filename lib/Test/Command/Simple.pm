@@ -9,18 +9,17 @@ Test::Command - Test external commands (nearly) as easily as loaded modules.
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use base 'Test::Builder::Module';
 use IPC::Open3;
 use IO::Select;
 use Symbol qw(gensym);
 use Scalar::Util qw(looks_like_number);
-use POSIX qw(:sys_wait_h);
 
 our @EXPORT = qw(
     run
@@ -85,6 +84,8 @@ if that's the case for purposes of SKIPping, rc will be set to -1.
 
 my ($stdout, $stderr, $rc);
 sub run {
+    my $opts = @_ && ref $_[0] eq 'HASH' ? shift : {};
+
     my @cmd = @_;
 
     # initialise everything each run.
@@ -99,34 +100,44 @@ sub run {
     __PACKAGE__->builder->ok(1, "Can run '@cmd'");
 
     my $s = IO::Select->new();
+
+    if ($opts->{stdin})
+    {
+        print $wtr $opts->{stdin};
+    }
+
     close $wtr;
     $s->add($rdr);
     $s->add($err);
-    
+
     my %map = (
                fileno($rdr) => \$stdout,
                fileno($err) => \$stderr,
               );
-    while (my @ready = $s->can_read())
+    while ($s->count())
     {
-        for my $fh (@ready)
+        if (my @ready = $s->can_read())
         {
-            my $buffer;
-            my $read = sysread($fh, $buffer, 1024);
-            if ($read)
+            for my $fh (@ready)
             {
+                my $buffer;
                 my $fileno = fileno($fh);
-                if ($map{$fileno})
+                my $read = sysread($fh, $buffer, 1024);
+                if ($read && $map{$fileno})
                 {
                     ${$map{$fileno}} .= $buffer;
                 }
+                else
+                {
+                    # done.
+                    $s->remove($fh);
+                    close $fh;
+                }
             }
-            else
-            {
-                # done.
-                $s->remove($fh);
-                close $fh;
-            }
+        }
+        elsif (my @err = $s->has_exception())
+        {
+            warn "Exception on ", fileno($_) for @err;
         }
     }
     waitpid $pid, 0;
@@ -174,7 +185,8 @@ Returns the exit status of the last run
 
 sub exit_status()
 {
-    WEXITSTATUS($rc);
+    #WEXITSTATUS($rc);
+    $rc >> 8;
 }
 
 =head2 run_ok
@@ -204,7 +216,7 @@ sub run_ok
         $wanted_rc = shift();
     }
     run(@_);
-    __PACKAGE__->builder->ok(WIFEXITED(rc), "Process terminated without a signal");
+    __PACKAGE__->builder->is_eq(rc & 0xFF, 0, "Process terminated without a signal");
     __PACKAGE__->builder->is_eq(exit_status, $wanted_rc, "Check return from '@_' is $wanted_rc");
 }
 
