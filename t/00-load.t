@@ -2,6 +2,9 @@
 
 use Test::More tests => 1;
 
+BAIL_OUT("No support for OS")
+    if $^O =~ /win/i && $^O !~ /cygwin/i;
+
 BEGIN {
     use_ok( 'Test::Command::Simple' ) || print "Bail out!
 ";

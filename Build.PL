@@ -2,6 +2,10 @@ use strict;
 use warnings;
 use Module::Build;
 
+die("No support for OS\n")
+    if $^O =~ /win/i && $^O !~ /cygwin/i;
+
+
 my $builder = Module::Build->new(
     module_name         => 'Test::Command::Simple',
     license             => 'perl',

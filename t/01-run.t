@@ -5,6 +5,9 @@ use warnings;
 
 use Test::More;
 
+BAIL_OUT("No support for OS")
+    if $^O =~ /win/i && $^O !~ /cygwin/i;
+
 BEGIN {
     use_ok('Test::Command::Simple');
 }

@@ -4,6 +4,9 @@ use strict;
 use warnings;
 use Test::More;
 
+BAIL_OUT("No support for OS")
+    if $^O =~ /win/i && $^O !~ /cygwin/i;
+
 unless ( $ENV{RELEASE_TESTING} ) {
     plan( skip_all => "Author tests not required for installation" );
 }
